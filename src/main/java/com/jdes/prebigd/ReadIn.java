@@ -12,6 +12,12 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.Callable;
+import java.util.concurrent.Future;
+import java.util.concurrent.ExecutionException;
+
+
 
 
 
@@ -23,7 +29,7 @@ import java.util.Collections;
 
 // the main method here reads in and accounts for a number for each new line
 public class ReadIn {
-	private static volatile BlockingQueue<String> queue = new ArrayBlockingQueue<String>(468);
+	private static volatile BlockingQueue<String> queue = new ArrayBlockingQueue<String>(1000);
 	// the word is the key (string), and the value is the number of times that word has appeared! 
 	static volatile HashMap<String, Integer> wordToCounts = new HashMap<>();
 	private static String line;
@@ -31,42 +37,36 @@ public class ReadIn {
 	
 //	static HashMap<Integer, String> mappedLines = new HashMap<>();
 	
-	public static String [] mapMethod(String line) {
+	public static synchronized void mapMethod(String line) {
 		// map splits each line into its words... 
 		// the number of the line is stored in the while loop...
 		line = line.toLowerCase();
 		
 		String [] words = line.split("\\W");
-		
-		
-		return words;
-	}
-	
-	public static synchronized void placeInQueue(String[] words) {
-		// do I want to put the array in? or each element of the array? 
 		for (String word: words) {
-		try { queue.put(word);
-	} catch (InterruptedException e) {
-		System.out.println("Error putting words into queue: "+e);
-	}
+			try { queue.offer(word);
+		} catch (ClassCastException e) {
+			System.out.println("Error putting words into queue: "+e);
 		}
-		
+			}
 	}
 	
-	public static synchronized List<String> takeFromQueue(BlockingQueue<String> queue) {
+	
+	
+	public static synchronized List<String> takeFromQueue(BlockingQueue<String> queue, List<String> wordsFromQueue) {
 		
-		List<String> wordsList = new ArrayList<String>();
-		List<String> wordsFromQueue = Collections.synchronizedList(wordsList);
+		
 		String wordFromQueue;
-		
+		if (queue.isEmpty() == false) {
 		for (String word: queue) {
 			try { wordFromQueue = queue.take();
 			wordsFromQueue.add(wordFromQueue);
-			
 			} catch (InterruptedException e) {
 				System.out.println("Error extracting words from queue: "+e);
 			}
 		}
+		
+	}
 		return wordsFromQueue;
 	}
 	
@@ -89,16 +89,26 @@ public class ReadIn {
 				wordToCounts.put(word, count + 1);
 			}
 		}
+		wordsFromQueue.clear();
 	}
 	
 	
-	public static void main( String[] args ) throws IOException {
+	public static void main( String[] args ) throws IOException, InterruptedException, ExecutionException {
 		System.out.println("Inside : " + Thread.currentThread().getName());
 		
-		ExecutorService executorService = Executors.newFixedThreadPool(10);
+		// I chose two b/c this allows time for the HashMap to be populated
 		
+		ExecutorService executorService = Executors.newFixedThreadPool(2);
+		
+		
+		
+		List<String> wordsList = new ArrayList<String>();
+		List<String> wordsFromQueue = Collections.synchronizedList(wordsList);
 		
 		BufferedReader reader = new BufferedReader(new FileReader(path));
+		
+		String firstline = reader.readLine();
+		System.out.println(firstline);
 //		int lineNum;
 //			
 //			lineNum = 0;
@@ -106,47 +116,60 @@ public class ReadIn {
 			Runnable mapTask = () -> {
 				System.out.println("mapTask inside: " + Thread.currentThread().getName());
 				try {
-				while ((line = reader.readLine()) != null) {
-					String[] wordsInLine = mapMethod(line);
-					placeInQueue(wordsInLine);
+					for (String line = reader.readLine(); line != null; line = reader.readLine()) {
+					    
 					
-				}
+					mapMethod(line); }
+//					placeInQueue(wordsInLine);
+				
+				System.out.println("Does it get past the while loop?");
 				} catch (IOException e) {
 					e.printStackTrace();
 				}
+				
+	
+				
 			};
 			
 			Runnable reduceTask = () -> {
 				System.out.println("reduceTask inside : " + Thread.currentThread().getName());
-				List<String> wordsFromQueue = takeFromQueue(queue);
-				reduce(wordsFromQueue);
-			
-				
-			};
-			
-			Runnable finalPrint = () -> {
-				System.out.println("reduceTask inside : " + Thread.currentThread().getName());
-				for (Entry<String, Integer> entry : wordToCounts.entrySet()) {
-					System.out.println("Word: "+ entry.getKey() + " Count: " + entry.getValue());
+				System.out.println("Does it...");
+				try {
+					Thread.sleep(10000);
+				} catch (InterruptedException e) {
+					e.printStackTrace();
 				}
+				System.out.println("... wait?");
+				
+				List<String> wordsFromQueue1 = takeFromQueue(queue, wordsFromQueue);
+				reduce(wordsFromQueue1);
+			
 				
 			};
 			
 			
 			executorService.submit(mapTask);
 			executorService.submit(reduceTask);
-			executorService.submit(finalPrint);
+//			scheduledService.schedule(finalPrint, 5, TimeUnit.SECONDS);
 			
 			
 			
 			
-			try {
-	        executorService.awaitTermination(60, TimeUnit.SECONDS);
-			} catch (InterruptedException e) {
-				e.printStackTrace();
-			}
+			
+			
 			executorService.shutdown();
-//				CountWords.countWords(path);		
+			executorService.awaitTermination(10, TimeUnit.SECONDS);
+			
+	        
+			
+			System.out.println("finalPrint inside : " + Thread.currentThread().getName());
+			
+			for (Entry<String, Integer> entry : wordToCounts.entrySet()) {
+				System.out.println("Word: "+ entry.getKey() + " Count: " + entry.getValue());
+			}
+			
+				CountWords.countWords(path);
+				reader.close();
 		
 	
 		// I don't think reduce needs to be part of the words...?
@@ -165,11 +188,9 @@ public class ReadIn {
 			
 	
 			
-			for (Entry<String, Integer> entry : wordToCounts.entrySet()) {
-				System.out.println("Word: "+ entry.getKey() + " Count: " + entry.getValue());
-			}
+			
 		
-			reader.close();
+			
 		
 		 
 	}
