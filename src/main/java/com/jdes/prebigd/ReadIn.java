@@ -21,8 +21,8 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
-
-
+import java.util.regex.Pattern;
+import java.util.regex.Matcher;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -48,7 +48,23 @@ public class ReadIn {
 	ExecutorService countersPool = Executors.newFixedThreadPool(COUNTER_THREADS);
 	
 	// queue for adding the words to be counted...
-	LinkedBlockingQueue<String[]> wordsQueue = new LinkedBlockingQueue<String[]>();
+	LinkedBlockingQueue<String[]> wordsQueueAE = new LinkedBlockingQueue<String[]>();
+	LinkedBlockingQueue<String[]> wordsQueueFJ = new LinkedBlockingQueue<String[]>();
+	LinkedBlockingQueue<String[]> wordsQueueKO = new LinkedBlockingQueue<String[]>();
+	LinkedBlockingQueue<String[]> wordsQueuePT = new LinkedBlockingQueue<String[]>();
+	LinkedBlockingQueue<String[]> wordsQueueUZ = new LinkedBlockingQueue<String[]>();
+	
+	private static List<String> listAE = new ArrayList<String>();
+	private static List<String> synlistAE = Collections.synchronizedList(listAE);
+	private static List<String> listFJ = new ArrayList<String>();
+	private static List<String> synlistFJ = Collections.synchronizedList(listFJ);
+	private static List<String> listKO = new ArrayList<String>();
+	private static List<String> synlistKO = Collections.synchronizedList(listKO);
+	private static List<String> listPT = new ArrayList<String>();
+	private static List<String> synlistPT = Collections.synchronizedList(listPT);
+	private static List<String> listUZ = new ArrayList<String>();
+	private static List<String> synlistUZ = Collections.synchronizedList(listUZ);
+	
 	
 	
 	// this keeps track of when the reading is done! :D 
@@ -70,25 +86,7 @@ public class ReadIn {
 	}
 	
 	
-	
-	public static synchronized List<String> takeFromQueue(BlockingQueue<String> queue, List<String> wordsFromQueue) {
-		
-		
-		String wordFromQueue;
-		if (queue.isEmpty() == false) {
-		for (String word: queue) {
-			try { wordFromQueue = queue.take();
-			wordsFromQueue.add(wordFromQueue);
-			} catch (InterruptedException e) {
-				System.out.println("Error extracting words from queue: "+e);
-			}
-		}
-		
-	}
-		return wordsFromQueue;
-	}
-	
-//	public static void reduce(String[] words) {
+
 	private void reduce(String[] words) {
 		
 		
@@ -106,18 +104,18 @@ public class ReadIn {
 			
 			count.incrementAndGet();
 		}
-//		wordsFromQueue.clear();
+
 	}
 	
 	private void createCounterThreads(ReadIn uhhh) {
 		
-		Runnable counterRunnable = new Runnable() {
+		Runnable counterRunnableAE = new Runnable() {
 			@Override
 			public void run() {
 				try {
-					while(readingFinished.get() == false || wordsQueue.isEmpty() == false) {
+					while(readingFinished.get() == false || wordsQueueAE.isEmpty() == false) {
 						
-						String[] words = wordsQueue.poll(1, TimeUnit.SECONDS);
+						String[] words = wordsQueueAE.poll(1, TimeUnit.SECONDS);
 						
 						if (words != null) {
 							reduce(words);
@@ -133,12 +131,126 @@ public class ReadIn {
 			} // run
 		};// Runnable
 		
-		for (int i = 0; i < COUNTER_THREADS; i++) {
-			uhhh.countersPool.submit(counterRunnable);
+		Runnable counterRunnableFJ = new Runnable() {
+			@Override
+			public void run() {
+				try {
+					while(readingFinished.get() == false || wordsQueueFJ.isEmpty() == false) {
+						
+						String[] words = wordsQueueFJ.poll(1, TimeUnit.SECONDS);
+						
+						if (words != null) {
+							reduce(words);
+						} // if 
+					} // while 
+						 
+					
+				} // try
+				catch (Exception e) {
+					e.printStackTrace();
+				}
+				
+			} // run
+		};// Runnable
+		
+		Runnable counterRunnableKO = new Runnable() {
+			@Override
+			public void run() {
+				try {
+					while(readingFinished.get() == false || wordsQueueKO.isEmpty() == false) {
+						
+						String[] words = wordsQueueKO.poll(1, TimeUnit.SECONDS);
+						
+						if (words != null) {
+							reduce(words);
+						} // if 
+					} // while 
+						 
+					
+				} // try
+				catch (Exception e) {
+					e.printStackTrace();
+				}
+				
+			} // run
+		};// Runnable
+		
+		Runnable counterRunnablePT = new Runnable() {
+			@Override
+			public void run() {
+				try {
+					while(readingFinished.get() == false || wordsQueuePT.isEmpty() == false) {
+						
+						String[] words = wordsQueuePT.poll(1, TimeUnit.SECONDS);
+						
+						if (words != null) {
+							reduce(words);
+						} // if 
+					} // while 
+						 
+					
+				} // try
+				catch (Exception e) {
+					e.printStackTrace();
+				}
+				
+			} // run
+		};// Runnable
+		
+		Runnable counterRunnableUZ = new Runnable() {
+			@Override
+			public void run() {
+				try {
+					while(readingFinished.get() == false || wordsQueueUZ.isEmpty() == false) {
+						
+						String[] words = wordsQueueUZ.poll(1, TimeUnit.SECONDS);
+						
+						if (words != null) {
+							reduce(words);
+						} // if 
+					} // while 
+						 
+					
+				} // try
+				catch (Exception e) {
+					e.printStackTrace();
+				}
+				
+			} // run
+		};// Runnable
+		
+		
+		
+		
+		uhhh.countersPool.submit(counterRunnableAE);
+		uhhh.countersPool.submit(counterRunnableFJ);
+		uhhh.countersPool.submit(counterRunnableKO);
+		uhhh.countersPool.submit(counterRunnablePT);
+		uhhh.countersPool.submit(counterRunnableUZ);
 			
-		} // for 
+		
 		
 	}// createCounterThreads
+	
+	public String[] createBucket(List<String> synlist) {
+		// declaration and initialize String Array 
+		String words[] = new String[synlist.size()]; 
+		  
+	    // ArrayList to Array Conversion 
+	    for (int j = 0; j < synlist.size(); j++) { 
+
+	        // Assign each value to String array 
+	        words[j] = synlist.get(j); 
+	    } 
+	    
+	    synlist.clear();
+
+	    return words;
+		
+		
+	}
+	
+
 	
 	
 	public void mapFile(final BufferedReader reader, ReadIn uhhh) {
@@ -148,7 +260,60 @@ public class ReadIn {
 				while ((line = reader.readLine()) != null) {
 					String[] words = mapMethod(line);
 					
-					wordsQueue.add(words);
+					String regexAE = "[a-e].*";
+					String regexFJ = "[f-j].*";
+					String regexKO = "[k-o].*";
+					String regexPT = "[p-t].*";
+					String regexUZ = "[u-z].*";
+					
+					
+					
+					for (String word: words) {
+						 
+						boolean matchesAE = Pattern.matches(regexAE, word);
+						boolean matchesFJ = Pattern.matches(regexFJ, word);
+						boolean matchesKO = Pattern.matches(regexKO, word);
+						boolean matchesPT = Pattern.matches(regexPT, word);
+						boolean matchesUZ = Pattern.matches(regexUZ, word);
+						 
+						 
+						 if (matchesAE == true) {
+							 synlistAE.add(word);
+//							 wordsQueueAE.add(word);
+						 }
+						 
+						 else if (matchesFJ == true) { 
+							 synlistFJ.add(word);
+						 }
+						 
+						 else if (matchesKO == true) { 
+							 synlistFJ.add(word);
+						 }
+						 
+						 else if (matchesPT == true) { 
+							 synlistFJ.add(word);
+						 }
+						 else if (matchesUZ == true) { 
+							 synlistFJ.add(word);
+						 }
+						
+					}
+					
+					String[] wordsAE = createBucket(synlistAE);
+					wordsQueueAE.add(wordsAE);
+					
+					String[] wordsFJ = createBucket(synlistFJ);
+					wordsQueueFJ.add(wordsFJ);
+					
+					String[] wordsKO = createBucket(synlistKO);
+					wordsQueueKO.add(wordsKO);
+					
+					String[] wordsPT = createBucket(synlistPT);
+					wordsQueuePT.add(wordsPT);
+					
+					String[] wordsUZ = createBucket(synlistUZ);
+					wordsQueueUZ.add(wordsUZ);
+					
 				} // while
 				reader.close(); 
 				} // try
@@ -162,28 +327,7 @@ public class ReadIn {
 		
 	} // mapFile 
 	
-//		fileReadersPool.submit(new Runnable() {
-//			@Override
-//			public void run() {
-//			String line = null;	
-//			
-////			System.out.println("mapTask inside: " + Thread.currentThread().getName());
-//			try {
-//				while ((line = reader.readLine()) != null) {
-//				    
-//				
-//				mapMethod(line); }
-////				placeInQueue(wordsInLine);
-//			
-//			} catch (IOException e) {
-//				e.printStackTrace();
-//			}
-//			
-//			}
-//			
-//		};) 
-//	}
-	
+
 	
 	public static void main( String[] args ) throws IOException, InterruptedException, ExecutionException {
 		
@@ -192,12 +336,9 @@ public class ReadIn {
 		
 		ReadIn uhhh = new ReadIn();
 		
-		
-//		List<String> wordsList = new ArrayList<String>();
-//		List<String> wordsFromQueue = Collections.synchronizedList(wordsList);
+
 		
 		BufferedReader reader = new BufferedReader(new FileReader(path));
-		
 		
 		
 		// this is where the multithreading shall begin! 
@@ -214,9 +355,7 @@ public class ReadIn {
 		
 		uhhh.countersPool.shutdown();
 		uhhh.countersPool.awaitTermination(60, TimeUnit.SECONDS);
-//		int lineNum;
-//			
-//			lineNum = 0;
+
 		System.out.println("Counter threads shutdown.");
 		
 		System.out.println("finalPrint inside : " + Thread.currentThread().getName());
@@ -226,36 +365,6 @@ public class ReadIn {
 		}
 		
 		System.out.println("There are "+ wordToCounts.size() + " unique words!");
-		
-		
-	
-			
-			
-//			fileReadersPool.submit(mapTask);
-//			executorService.submit(reduceTask);
-//			scheduledService.schedule(finalPrint, 5, TimeUnit.SECONDS);
-			
-				
-//				reader.close();
-//		
-	
-		// I don't think reduce needs to be part of the words...?
-				// I think It only needs to be called on the queue...
-			
-//				reduce(words);
-//				
-//				lineNum++;
-//				System.out.print("Line Num: " + lineNum+" Line: "+line+"\n");
-//				
-//				
-//			}
-//			System.out.println("Using hashmap, count: "+ count);
-			// count words...
-			
-			
-	
-			
-			
 		
 			
 		
