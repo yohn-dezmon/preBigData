@@ -3,6 +3,7 @@ package com.jdes.prebigd;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
+import java.security.MessageDigest;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map.Entry;
@@ -28,7 +29,8 @@ import java.util.regex.Matcher;
 import java.util.ArrayList;
 import java.util.Collections;
 
-
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 
 
 // the main method here reads in and accounts for a number for each new line
@@ -155,61 +157,67 @@ public class ReadIn {
 				String line = null;
 				
 				try {
+					MessageDigest md = MessageDigest.getInstance("MD5");
+					
+				try {
 				while (reader.ready()) {
 					
 					line = reader.readLine();
 					String[] words = mapMethod(line);
 							
 					for (String word: words) {
-						int index = 0;
+						int index = -1;
 						
 						
-						if (word.length() != 0) {
-							char firstChar = word.charAt(0);
+						byte[] hashInBytes = md.digest(word.getBytes());
 						
-							if (firstChar < 102) {
+
+						
+							if (hashInBytes[0] < -77) {
 							index = 0;
 							
 							}
-							else if (firstChar < 107) {
+							else if (hashInBytes[0] < -26) {
 							index = 1;
 							}
 						
-							else if (firstChar < 112) {
+							else if (hashInBytes[0] < 25) {
 							index = 2;
 							}
 						
-							else if (firstChar < 117) {
+							else if (hashInBytes[0] < 76) {
 							index = 3;
 							}
 						
-							else if (firstChar <= 122) {
+							else if (hashInBytes[0] <= 127) {
 							index = 4;
 							}
-							else {
-								index = 0;
-							}
 							
-						} // if 
+						
 						
 						// this is genius, also look he is adding individual words! 
 						
 						wordsQueues.get(index).add(word);
 						
 					} // other for 
-				} // while
+				}
 				reader.close(); 
-				} // try
-				catch (IOException e) {
-					e.printStackTrace();
-				} // catch
+					} catch (IOException e) {
+						e.printStackTrace();
+					} // catch
+				} catch (NoSuchAlgorithmException e) {
+					System.out.println(e);
+				}
+				
+				}; // try
 				
 				
+				uhhh.fileReadersPool.submit(mapTask);
 			
-		}; // Runnable
-		uhhh.fileReadersPool.submit(mapTask);
+		} 
 		
-	} // mapFile 
+		
+	 
 	
 
 	
