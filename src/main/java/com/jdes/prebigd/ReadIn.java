@@ -8,6 +8,7 @@ import java.util.List;
 import java.util.Map.Entry;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -47,39 +48,21 @@ public class ReadIn {
 	
 	ExecutorService countersPool = Executors.newFixedThreadPool(COUNTER_THREADS);
 	
-	// queue for adding the words to be counted...
-	LinkedBlockingQueue<String[]> wordsQueueAE = new LinkedBlockingQueue<String[]>();
-	LinkedBlockingQueue<String[]> wordsQueueFJ = new LinkedBlockingQueue<String[]>();
-	LinkedBlockingQueue<String[]> wordsQueueKO = new LinkedBlockingQueue<String[]>();
-	LinkedBlockingQueue<String[]> wordsQueuePT = new LinkedBlockingQueue<String[]>();
-	LinkedBlockingQueue<String[]> wordsQueueUZ = new LinkedBlockingQueue<String[]>();
-	
-	private static List<String> listAE = new ArrayList<String>();
-	private static List<String> synlistAE = Collections.synchronizedList(listAE);
-	private static List<String> listFJ = new ArrayList<String>();
-	private static List<String> synlistFJ = Collections.synchronizedList(listFJ);
-	private static List<String> listKO = new ArrayList<String>();
-	private static List<String> synlistKO = Collections.synchronizedList(listKO);
-	private static List<String> listPT = new ArrayList<String>();
-	private static List<String> synlistPT = Collections.synchronizedList(listPT);
-	private static List<String> listUZ = new ArrayList<String>();
-	private static List<String> synlistUZ = Collections.synchronizedList(listUZ);
-	
-	
+	private static volatile ArrayList<LinkedBlockingQueue<String>> wordsQueues = new ArrayList<LinkedBlockingQueue<String>>(COUNTER_THREADS);
+
 	
 	// this keeps track of when the reading is done! :D 
 	AtomicBoolean readingFinished = new AtomicBoolean(false);
+	private static AtomicInteger finalCount = new AtomicInteger();
 	
-	private static String line;
+	
 	private static String path = "/Users/HomeFolder/Desktop/DevPortfolio/UltimateGuideDataEng/ch6.txt";
-	
-//	static HashMap<Integer, String> mappedLines = new HashMap<>();
+
 	
 	public static synchronized String[] mapMethod(String line) {
 		// map splits each line into its words... 
 		// the number of the line is stored in the while loop...
 		line = line.toLowerCase();
-		
 		String [] words = line.split("\\W");
 		
 		return words;
@@ -87,149 +70,63 @@ public class ReadIn {
 	
 	
 
-	private void reduce(String[] words) {
-		
-		
-		// reduce does the COUNTING
-		
-		for(String word : words) {
-			// a get on something that didn't exist in the hashmap previously
-			// returns a value of null! (that's why we need the if statements below)
-			AtomicInteger count = wordToCounts.putIfAbsent(word, new AtomicInteger(0));
+	private void reduce(String words) {
+	
+			AtomicInteger count = wordToCounts.putIfAbsent(words, new AtomicInteger(0));
 			
 			if (count == null) {
 				// no previous count 
-				count = wordToCounts.get(word);
+				count = wordToCounts.get(words);
 			} 
 			
 			count.incrementAndGet();
 		}
-
-	}
 	
 	private void createCounterThreads(ReadIn uhhh) {
-		
-		Runnable counterRunnableAE = new Runnable() {
-			@Override
-			public void run() {
-				try {
-					while(readingFinished.get() == false || wordsQueueAE.isEmpty() == false) {
-						
-						String[] words = wordsQueueAE.poll(1, TimeUnit.SECONDS);
-						
-						if (words != null) {
-							reduce(words);
-						} // if 
-					} // while 
-						 
-					
-				} // try
-				catch (Exception e) {
-					e.printStackTrace();
-				}
-				
-			} // run
-		};// Runnable
-		
-		Runnable counterRunnableFJ = new Runnable() {
-			@Override
-			public void run() {
-				try {
-					while(readingFinished.get() == false || wordsQueueFJ.isEmpty() == false) {
-						
-						String[] words = wordsQueueFJ.poll(1, TimeUnit.SECONDS);
-						
-						if (words != null) {
-							reduce(words);
-						} // if 
-					} // while 
-						 
-					
-				} // try
-				catch (Exception e) {
-					e.printStackTrace();
-				}
-				
-			} // run
-		};// Runnable
-		
-		Runnable counterRunnableKO = new Runnable() {
-			@Override
-			public void run() {
-				try {
-					while(readingFinished.get() == false || wordsQueueKO.isEmpty() == false) {
-						
-						String[] words = wordsQueueKO.poll(1, TimeUnit.SECONDS);
-						
-						if (words != null) {
-							reduce(words);
-						} // if 
-					} // while 
-						 
-					
-				} // try
-				catch (Exception e) {
-					e.printStackTrace();
-				}
-				
-			} // run
-		};// Runnable
-		
-		Runnable counterRunnablePT = new Runnable() {
-			@Override
-			public void run() {
-				try {
-					while(readingFinished.get() == false || wordsQueuePT.isEmpty() == false) {
-						
-						String[] words = wordsQueuePT.poll(1, TimeUnit.SECONDS);
-						
-						if (words != null) {
-							reduce(words);
-						} // if 
-					} // while 
-						 
-					
-				} // try
-				catch (Exception e) {
-					e.printStackTrace();
-				}
-				
-			} // run
-		};// Runnable
-		
-		Runnable counterRunnableUZ = new Runnable() {
-			@Override
-			public void run() {
-				try {
-					while(readingFinished.get() == false || wordsQueueUZ.isEmpty() == false) {
-						
-						String[] words = wordsQueueUZ.poll(1, TimeUnit.SECONDS);
-						
-						if (words != null) {
-							reduce(words);
-						} // if 
-					} // while 
-						 
-					
-				} // try
-				catch (Exception e) {
-					e.printStackTrace();
-				}
-				
-			} // run
-		};// Runnable
+//		class counterRunnable1 implements Runnable {
+//		https://stackoverflow.com/questions/5853167/runnable-with-a-parameter	
+//		} 
 		
 		
-		
-		
-		uhhh.countersPool.submit(counterRunnableAE);
-		uhhh.countersPool.submit(counterRunnableFJ);
-		uhhh.countersPool.submit(counterRunnableKO);
-		uhhh.countersPool.submit(counterRunnablePT);
-		uhhh.countersPool.submit(counterRunnableUZ);
+		for (int i = 0; i < COUNTER_THREADS; i++) {
+			final int counterQueueIndex = i;
 			
+			uhhh.countersPool.submit(new Runnable() {
+			@Override
+			public void run() {
+				System.out.println("Does it get to run()?");
+				int amountProcessed = 0;
+				
+				LinkedBlockingQueue<String> myQueue = wordsQueues.get(counterQueueIndex);
+				try {
+					while(readingFinished.get() == false || myQueue.isEmpty() == false) {
+						
+						// this is weird...  isn't it just pulling out one word at a time?
+						String words = myQueue.poll(1, TimeUnit.SECONDS);
+						
+						if (words != null) {
+							reduce(words);
+							
+							amountProcessed++;
+						} // if 
+					} // while 
+						 
+					
+				} // try
+				catch (Exception e) {
+					e.printStackTrace();
+				}
+				System.out.println("Counter thread "+ counterQueueIndex + " processed " + amountProcessed);
+				finalCount.addAndGet(amountProcessed);
+				
+				
+			} // run
+			
+			});// Runnable
 		
 		
+		
+		} // for loop 
 	}// createCounterThreads
 	
 	public String[] createBucket(List<String> synlist) {
@@ -256,70 +153,57 @@ public class ReadIn {
 	public void mapFile(final BufferedReader reader, ReadIn uhhh) {
 		Runnable mapTask = () -> {
 				String line = null;
+				
 				try {
-				while ((line = reader.readLine()) != null) {
+				while (reader.ready()) {
+					
+					line = reader.readLine();
 					String[] words = mapMethod(line);
-					
-					String regexAE = "[a-e].*";
-					String regexFJ = "[f-j].*";
-					String regexKO = "[k-o].*";
-					String regexPT = "[p-t].*";
-					String regexUZ = "[u-z].*";
-					
-					
-					
+							
 					for (String word: words) {
-						 
-						boolean matchesAE = Pattern.matches(regexAE, word);
-						boolean matchesFJ = Pattern.matches(regexFJ, word);
-						boolean matchesKO = Pattern.matches(regexKO, word);
-						boolean matchesPT = Pattern.matches(regexPT, word);
-						boolean matchesUZ = Pattern.matches(regexUZ, word);
-						 
-						 
-						 if (matchesAE == true) {
-							 synlistAE.add(word);
-//							 wordsQueueAE.add(word);
-						 }
-						 
-						 else if (matchesFJ == true) { 
-							 synlistFJ.add(word);
-						 }
-						 
-						 else if (matchesKO == true) { 
-							 synlistFJ.add(word);
-						 }
-						 
-						 else if (matchesPT == true) { 
-							 synlistFJ.add(word);
-						 }
-						 else if (matchesUZ == true) { 
-							 synlistFJ.add(word);
-						 }
+						int index = 0;
 						
-					}
-					
-					String[] wordsAE = createBucket(synlistAE);
-					wordsQueueAE.add(wordsAE);
-					
-					String[] wordsFJ = createBucket(synlistFJ);
-					wordsQueueFJ.add(wordsFJ);
-					
-					String[] wordsKO = createBucket(synlistKO);
-					wordsQueueKO.add(wordsKO);
-					
-					String[] wordsPT = createBucket(synlistPT);
-					wordsQueuePT.add(wordsPT);
-					
-					String[] wordsUZ = createBucket(synlistUZ);
-					wordsQueueUZ.add(wordsUZ);
-					
+						
+						if (word.length() != 0) {
+							char firstChar = word.charAt(0);
+						
+							if (firstChar < 102) {
+							index = 0;
+							
+							}
+							else if (firstChar < 107) {
+							index = 1;
+							}
+						
+							else if (firstChar < 112) {
+							index = 2;
+							}
+						
+							else if (firstChar < 117) {
+							index = 3;
+							}
+						
+							else if (firstChar <= 122) {
+							index = 4;
+							}
+							else {
+								index = 0;
+							}
+							
+						} // if 
+						
+						// this is genius, also look he is adding individual words! 
+						
+						wordsQueues.get(index).add(word);
+						
+					} // other for 
 				} // while
 				reader.close(); 
 				} // try
 				catch (IOException e) {
 					e.printStackTrace();
 				} // catch
+				
 				
 			
 		}; // Runnable
@@ -333,6 +217,10 @@ public class ReadIn {
 		
 		
 		System.out.println("Inside : " + Thread.currentThread().getName());
+		
+		for (int i = 0; i < COUNTER_THREADS ; ++i) {
+		    wordsQueues.add(new LinkedBlockingQueue<String>());
+		}
 		
 		ReadIn uhhh = new ReadIn();
 		
@@ -365,7 +253,7 @@ public class ReadIn {
 		}
 		
 		System.out.println("There are "+ wordToCounts.size() + " unique words!");
-		
+		System.out.println("There were "+ finalCount + " words processed!");
 			
 		
 		 
