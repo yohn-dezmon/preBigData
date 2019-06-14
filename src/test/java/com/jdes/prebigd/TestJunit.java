@@ -33,12 +33,19 @@ public class TestJunit {
 	}
 	
 	@Test
-	public void shouldHandleNull() {
+	public void shouldHandleNonWords() {
+		// ok this failed, the reason being that right now the string is being
+		// split off of white spaces! 
+		// this is good for the most part, but isn't good for when there is > 1 white space
 		
-		String[] testArray = {"bob"};
+		String[] testArray = {"bob","jennifer"};
 		
-		assertArrayEquals(testArray, ReadIn.mapMethod("   bob   "));
-		
+		// two spaces after jennifer...
+		assertArrayEquals(testArray, ReadIn.mapMethod("bob jennifer - - "));
+		assertArrayEquals(testArray, ReadIn.mapMethod("bob jennifer  "));
+		assertArrayEquals(testArray, ReadIn.mapMethod("bob jennifer \n\n"));
+		assertArrayEquals(testArray, ReadIn.mapMethod("bob jennifer *"));
+		assertArrayEquals(testArray, ReadIn.mapMethod("* bob jennifer"));
 	}
 
 }

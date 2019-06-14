@@ -27,6 +27,7 @@ import java.util.regex.Pattern;
 import java.util.regex.Matcher;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 
 import java.security.MessageDigest;
@@ -65,9 +66,29 @@ public class ReadIn {
 		// map splits each line into its words... 
 		// the number of the line is stored in the while loop...
 		line = line.toLowerCase();
-		String [] words = line.split("\\W");
+		// creating an array of strings using non-word characters as the delimiters
+		String[] words = line.split("\\s");
 		
-		return words;
+		String[] undesiredChars = {"*","-","•"};
+		
+		
+		List<String> noBlanks = new ArrayList<String>();
+		
+		
+		for (String word: words) {
+			boolean contains = Arrays.asList(undesiredChars).contains(word);
+			if (contains == false) {
+				noBlanks.add(word);
+			}
+		}
+		
+		Object[] wordsNoBlanks = noBlanks.toArray();
+		
+		String[] stringNoBlanks = Arrays.stream(wordsNoBlanks).toArray(String[]::new);
+		
+
+		
+		return stringNoBlanks;
 	}
 	
 	
