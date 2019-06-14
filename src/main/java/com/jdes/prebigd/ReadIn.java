@@ -170,7 +170,6 @@ public class ReadIn {
 						
 						
 						byte[] hashInBytes = md.digest(word.getBytes());
-						
 
 						
 							if (hashInBytes[0] < -77) {
