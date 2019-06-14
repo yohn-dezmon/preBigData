@@ -10,11 +10,20 @@ public class TestRunner {
 	
 	public static void main(String[] args) {
 		
-		Result result = JUnitCore.runClasses(TestJunit.class);
-		for (Failure failure : result.getFailures()) {
+		Result mapResult = JUnitCore.runClasses(TestMapper.class);
+		for (Failure failure : mapResult.getFailures()) {
 			System.out.println(failure.toString());
 		}
-		System.out.println("Result=="+result.wasSuccessful());
+		System.out.println("mapResult=="+mapResult.wasSuccessful());
+	
+	
+	Result reduceResult = JUnitCore.runClasses(TestReducer.class);
+	for (Failure failure : reduceResult.getFailures()) {
+		System.out.println(failure.toString());
 	}
-
+	System.out.println("reduceResult=="+reduceResult.wasSuccessful());
 }
+}
+
+
+

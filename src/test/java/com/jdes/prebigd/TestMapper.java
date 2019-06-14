@@ -6,7 +6,7 @@ import org.junit.Test;
 import org.junit.BeforeClass;
 
 
-public class TestJunit {
+public class TestMapper {
 	
 	@BeforeClass
 	public static void onlyOnce() {
@@ -47,5 +47,8 @@ public class TestJunit {
 		assertArrayEquals(testArray, ReadIn.mapMethod("bob jennifer *"));
 		assertArrayEquals(testArray, ReadIn.mapMethod("* bob jennifer"));
 	}
+	
+	
+	
 
 }

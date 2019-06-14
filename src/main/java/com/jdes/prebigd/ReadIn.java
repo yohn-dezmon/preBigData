@@ -38,7 +38,7 @@ import java.security.NoSuchAlgorithmException;
 public class ReadIn {
 	private static volatile BlockingQueue<String> queue = new ArrayBlockingQueue<String>(1000);
 	// the word is the key (string), and the value is the number of times that word has appeared! 
-	static ConcurrentHashMap<String, AtomicInteger> wordToCounts = new ConcurrentHashMap<>();
+	public static ConcurrentHashMap<String, AtomicInteger> wordToCounts = new ConcurrentHashMap<>();
 	
 	public static final int READER_THREADS = 5;
 	
@@ -69,7 +69,7 @@ public class ReadIn {
 		// creating an array of strings using non-word characters as the delimiters
 		String[] words = line.split("\\s");
 		
-		String[] undesiredChars = {"*","-","•"};
+		String[] undesiredChars = {"*","-","•"," ","--"};
 		
 		
 		List<String> noBlanks = new ArrayList<String>();
@@ -93,7 +93,7 @@ public class ReadIn {
 	
 	
 
-	private void reduce(String words) {
+	public void reduce(String words) {
 	
 			AtomicInteger count = wordToCounts.putIfAbsent(words, new AtomicInteger(0));
 			
@@ -117,7 +117,7 @@ public class ReadIn {
 			uhhh.countersPool.submit(new Runnable() {
 			@Override
 			public void run() {
-				System.out.println("Does it get to run()?");
+				
 				int amountProcessed = 0;
 				
 				LinkedBlockingQueue<String> myQueue = wordsQueues.get(counterQueueIndex);
